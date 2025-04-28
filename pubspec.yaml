@@ -32,8 +32,6 @@ dependencies:
     sdk: flutter
   firebase_core: ^2.32.0
   firebase_messaging: ^14.7.0
-  firebase_auth: ^4.12.1
-  flutter_local_notifications: ^15.1.1
   cloud_firestore: ^4.15.1
   cupertino_icons: ^1.0.8
 
