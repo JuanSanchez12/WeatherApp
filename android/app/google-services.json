@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "486881316013",
+    "project_id": "js-weatherly-app",
+    "storage_bucket": "js-weatherly-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:486881316013:android:0b1d3d9d8eb18a914d4a24",
+        "android_client_info": {
+          "package_name": "com.example.weather_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_GS3znr5Ois8GvR--rZWN98BSUgI2h3E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
