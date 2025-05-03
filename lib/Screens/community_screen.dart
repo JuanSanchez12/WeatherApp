@@ -4,6 +4,7 @@ import '../Models/post_model.dart';
 import '../Providers/post_provider.dart';
 import '../Screens/add_post_screen.dart';
 
+// Screen for displaying community weather posts
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
 
@@ -15,6 +16,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   void initState() {
     super.initState();
+    // Fetch posts after the widget initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<PostProvider>(context, listen: false).fetchPosts();
     });
@@ -26,6 +28,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       appBar: AppBar(
         title: const Text('Community Posts'),
       ),
+      // Main content area showing list of posts
       body: Consumer<PostProvider>(
         builder: (context, postProvider, child) {
           return ListView.builder(
@@ -38,6 +41,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           );
         },
       ),
+      // Button to add new post
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
@@ -49,8 +53,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  // Builds a card widget for an individual post
   Widget _buildPostCard(BuildContext context, Post post) {
     final postProvider = Provider.of<PostProvider>(context, listen: false);
+    
+    // Mapping of weather types to background colors
     final weatherOptions = {
       'clear': Colors.orange[100]!,
       'clouds': Colors.grey[200]!,
@@ -58,6 +65,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
       'snow': Colors.blue[50]!,
       'thunderstorm': Colors.purple[100]!,
     };
+    
+    // Mapping of weather types to icons
     final weatherIcons = {
       'clear': Icons.wb_sunny,
       'clouds': Icons.cloud,
@@ -73,8 +82,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Left column with user avatar and weather icon
             Column(
               children: [
+                // User avatar placeholder
                 Container(
                   width: 60,
                   height: 60,
@@ -85,6 +96,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   child: const Icon(Icons.person, size: 40, color: Colors.grey),
                 ),
                 const SizedBox(height: 8),
+                // Weather condition icon
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
@@ -99,10 +111,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
               ],
             ),
             const SizedBox(width: 16),
+            // Right column with post content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title row with edit/delete menu
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -115,6 +129,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                           ),
                         ),
                       ),
+                      // Context menu for post actions
                       PopupMenuButton(
                         itemBuilder: (context) => [
                           const PopupMenuItem(
@@ -128,6 +143,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         ],
                         onSelected: (value) {
                           if (value == 'edit') {
+                            // Navigate to edit screen
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -135,6 +151,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                               ),
                             );
                           } else if (value == 'delete') {
+                            // Delete the post
                             postProvider.deletePost(post.id);
                           }
                         },
@@ -142,8 +159,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  // Post message content
                   Text(post.message),
                   const SizedBox(height: 8),
+                  // Post date
                   Text(
                     '${post.timestamp.day}/${post.timestamp.month}/${post.timestamp.year}',
                     style: TextStyle(
@@ -160,6 +179,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  // Returns appropriate icon color based on weather type
   Color _getWeatherIconColor(String weatherType) {
     switch (weatherType) {
       case 'clear': return Colors.orange;

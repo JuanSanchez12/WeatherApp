@@ -5,6 +5,7 @@ import '../Providers/location_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 
+/// HomeScreen displays current weather and hourly forecast for a location
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -14,13 +15,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final WeatherService _weatherService = WeatherService();
-  Map<String, dynamic>? _currentWeather;
-  List<dynamic> _hourlyForecast = [];
-  bool _isLoading = false;
-  String _error = '';
-  int? _expandedHourIndex;
+  Map<String, dynamic>? _currentWeather; // Stores current weather data
+  List<dynamic> _hourlyForecast = []; // Stores hourly forecast data
+  bool _isLoading = false; // Loading state flag
+  String _error = ''; // Error message storage
+  int? _expandedHourIndex; // Tracks which hourly forecast item is expanded
 
-  // Weather condition to color and icon mapping
+  /// Maps weather conditions to background colors
   final Map<String, Color> _weatherColors = {
     'clear': Colors.orange[100]!,
     'clouds': Colors.grey[200]!,
@@ -30,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'default': Colors.red[100]!,
   };
 
+  /// Maps weather conditions to display icons
   final Map<String, IconData> _weatherIcons = {
     'clear': Icons.wb_sunny,
     'clouds': Icons.cloud,
@@ -38,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'thunderstorm': Icons.flash_on,
   };
 
+  /// Returns appropriate icon color based on weather condition
   Color _getWeatherIconColor(String weatherType) {
     switch (weatherType) {
       case 'clear': return Colors.orange;
@@ -49,6 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Fetches weather data for given coordinates and updates state
   Future<void> _fetchWeather(double lat, double lon) async {
     setState(() {
       _isLoading = true;
@@ -71,6 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  /// Shows city search dialog and handles location selection
   Future<void> _showSearch(BuildContext context) async {
     final selectedCity = await showSearch<String>(
       context: context,
@@ -85,17 +90,20 @@ class _HomeScreenState extends State<HomeScreen> {
           orElse: () => cities.first,
         );
         
+        // Update app-wide location state
         final locationProvider = Provider.of<LocationProvider>(context, listen: false);
         locationProvider.updateLocation(
           selectedCity,
           LatLng(location['lat'], location['lon']),
         );
         
+        // Fetch weather for new location
         _fetchWeather(location['lat'], location['lon']);
       }
     }
   }
 
+  /// Determines background color based on current weather
   Color _getBackgroundColor() {
     if (_currentWeather == null) return _weatherColors['default']!;
     final condition = _currentWeather!['weather'][0]['main'].toString().toLowerCase();
@@ -105,6 +113,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // Fetch weather for current location after first frame renders
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final locationProvider = Provider.of<LocationProvider>(context, listen: false);
       _fetchWeather(
@@ -150,6 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Builds the card displaying current weather conditions
   Widget _buildCurrentWeatherCard(String locationName, String weatherCondition, Color iconColor) {
     return Card(
       elevation: 4,
@@ -206,6 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Builds a weather detail item (icon + value)
   Widget _buildWeatherDetail(IconData icon, String label, String value) {
     return Column(
       children: [
@@ -216,6 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// Builds the hourly forecast list with expandable items
   Widget _buildHourlyForecast(Color iconColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

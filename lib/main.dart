@@ -10,12 +10,10 @@ import 'Widgets/navbar_widget.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:weather_app/firebase_options.dart';
 
+// Main entry point - initializes Firebase and state providers
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
   runApp(
     MultiProvider(
@@ -28,6 +26,7 @@ Future<void> main() async {
   );
 }
 
+// Root widget that configures the MaterialApp
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -35,14 +34,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Weather App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple)),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
+// Main scaffold with bottom navigation
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
   final String title;
@@ -51,9 +49,9 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+// Manages screen navigation state
 class _MyHomePageState extends State<MyHomePage> {
   int _currentIndex = 0;
-
   final List<Widget> _screens = [
     const HomeScreen(),
     const DailyScreen(),
@@ -67,9 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
+        onTap: (index) => setState(() => _currentIndex = index),
       ),
     );
   }

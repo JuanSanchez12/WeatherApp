@@ -5,6 +5,7 @@ import '../Providers/location_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
 
+/// Screen that displays a 7-day weather forecast with detailed daily information
 class DailyScreen extends StatefulWidget {
   const DailyScreen({super.key});
 
@@ -14,12 +15,12 @@ class DailyScreen extends StatefulWidget {
 
 class _DailyScreenState extends State<DailyScreen> {
   final WeatherService _weatherService = WeatherService();
-  Map<String, dynamic>? _weatherData;
-  bool _isLoading = false;
-  String _error = '';
-  int _selectedDayIndex = 0;
+  Map<String, dynamic>? _weatherData; // Stores complete weather data from API
+  bool _isLoading = false; // Tracks loading state
+  String _error = ''; // Stores error messages
+  int _selectedDayIndex = 0; // Tracks which day is selected in the forecast
 
-  // Weather condition to color and icon mapping
+  // Maps weather conditions to background colors
   final Map<String, Color> _weatherColors = {
     'clear': Colors.orange[100]!,
     'clouds': Colors.grey[200]!,
@@ -29,6 +30,7 @@ class _DailyScreenState extends State<DailyScreen> {
     'default': Colors.red[100]!,
   };
 
+  // Maps weather conditions to display icons
   final Map<String, IconData> _weatherIcons = {
     'clear': Icons.wb_sunny,
     'clouds': Icons.cloud,
@@ -37,6 +39,7 @@ class _DailyScreenState extends State<DailyScreen> {
     'thunderstorm': Icons.flash_on,
   };
 
+  /// Returns appropriate icon color based on weather condition
   Color _getWeatherIconColor(String weatherType) {
     switch (weatherType) {
       case 'clear': return Colors.orange;
@@ -48,6 +51,7 @@ class _DailyScreenState extends State<DailyScreen> {
     }
   }
 
+  /// Fetches weather data for given coordinates
   Future<void> _fetchWeather(double lat, double lon) async {
     setState(() {
       _isLoading = true;
@@ -68,6 +72,7 @@ class _DailyScreenState extends State<DailyScreen> {
     }
   }
 
+  /// Shows city search dialog and updates location when selected
   Future<void> _showSearch(BuildContext context) async {
     final selectedCity = await showSearch<String>(
       context: context,
@@ -82,17 +87,20 @@ class _DailyScreenState extends State<DailyScreen> {
           orElse: () => cities.first,
         );
         
+        // Update app-wide location
         final locationProvider = Provider.of<LocationProvider>(context, listen: false);
         locationProvider.updateLocation(
           selectedCity,
           LatLng(location['lat'], location['lon']),
         );
         
+        // Fetch weather for new location
         _fetchWeather(location['lat'], location['lon']);
       }
     }
   }
 
+  /// Determines background color based on current weather
   Color _getBackgroundColor() {
     if (_weatherData == null) return _weatherColors['default']!;
     final condition = _weatherData!['current']['weather'][0]['main'].toString().toLowerCase();
@@ -102,6 +110,7 @@ class _DailyScreenState extends State<DailyScreen> {
   @override
   void initState() {
     super.initState();
+    // Fetch weather for current location after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final locationProvider = Provider.of<LocationProvider>(context, listen: false);
       _fetchWeather(
@@ -138,10 +147,13 @@ class _DailyScreenState extends State<DailyScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
+                      // Current weather summary card
                       _buildCurrentWeatherCard(locationProvider.currentCity, weatherCondition, iconColor),
                       const SizedBox(height: 20),
+                      // Horizontal list of forecast days
                       _buildDailyForecastList(),
                       const SizedBox(height: 20),
+                      // Detailed card for selected day
                       if (_weatherData != null && _weatherData!['daily'] != null)
                         _buildSelectedDayCard(_weatherData!['daily'][_selectedDayIndex]),
                     ],
@@ -150,6 +162,7 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
+  /// Builds the current weather summary card
   Widget _buildCurrentWeatherCard(String locationName, String weatherCondition, Color iconColor) {
     return Card(
       elevation: 4,
@@ -162,6 +175,7 @@ class _DailyScreenState extends State<DailyScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Weather condition icon
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -175,6 +189,7 @@ class _DailyScreenState extends State<DailyScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
+                // Location name
                 Text(
                   locationName,
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -182,16 +197,19 @@ class _DailyScreenState extends State<DailyScreen> {
               ],
             ),
             const SizedBox(height: 10),
+            // Current temperature
             Text(
               '${_weatherData?['current']['temp']?.toStringAsFixed(1) ?? '--'}°F',
               style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
+            // Weather description
             Text(
               _weatherData?['current']['weather'][0]['main']?.toString() ?? '--',
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 16),
+            // Weather details row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -206,6 +224,7 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
+  /// Builds the horizontal scrollable list of forecast days
   Widget _buildDailyForecastList() {
     if (_weatherData == null || _weatherData!['daily'] == null) {
       return const Center(child: Text('No forecast data available'));
@@ -241,6 +260,7 @@ class _DailyScreenState extends State<DailyScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // Day name
                   Text(
                     dayName.substring(0, 3),
                     style: TextStyle(
@@ -248,6 +268,7 @@ class _DailyScreenState extends State<DailyScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  // Weather icon
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
@@ -261,6 +282,7 @@ class _DailyScreenState extends State<DailyScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
+                  // Temperature range
                   Text(
                     '${day['temp']['max']?.toStringAsFixed(0) ?? '--'}°',
                     style: const TextStyle(fontWeight: FontWeight.bold),
@@ -278,6 +300,7 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
+  /// Builds detailed card for the selected day
   Widget _buildSelectedDayCard(Map<String, dynamic> day) {
     final date = DateTime.fromMillisecondsSinceEpoch(day['dt'] * 1000);
     final dayName = _getDayName(date.weekday);
@@ -295,6 +318,7 @@ class _DailyScreenState extends State<DailyScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Weather icon
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -308,6 +332,7 @@ class _DailyScreenState extends State<DailyScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
+                // Date information
                 Text(
                   '$dayName, ${date.month}/${date.day}',
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -315,11 +340,13 @@ class _DailyScreenState extends State<DailyScreen> {
               ],
             ),
             const SizedBox(height: 10),
+            // Weather description
             Text(
               weatherCondition,
               style: const TextStyle(fontSize: 20),
             ),
             const SizedBox(height: 16),
+            // First row of details
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -329,6 +356,7 @@ class _DailyScreenState extends State<DailyScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            // Second row of details
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -343,6 +371,7 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
+  /// Helper to build consistent weather detail items
   Widget _buildWeatherDetail(IconData icon, String label, String value) {
     return Column(
       children: [
@@ -353,6 +382,7 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
+  /// Converts weekday number to day name
   String _getDayName(int weekday) {
     switch (weekday) {
       case 1: return 'Monday';
@@ -366,6 +396,7 @@ class _DailyScreenState extends State<DailyScreen> {
     }
   }
 
+  /// Formats timestamp into HH:MM time string
   String _formatTime(int timestamp) {
     final time = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
     return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
