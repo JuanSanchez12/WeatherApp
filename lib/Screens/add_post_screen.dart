@@ -124,11 +124,12 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
-  void _submitForm() {
-    if (_formKey.currentState?.validate() ?? false) {
+  void _submitForm() async {
+  if (_formKey.currentState?.validate() ?? false) {
+    try {
       final postProvider = Provider.of<PostProvider>(context, listen: false);
       final newPost = Post(
-        id: widget.existingPost?.id ?? DateTime.now().toString(),
+        id: widget.existingPost?.id ?? '',
         title: _titleController.text,
         message: _messageController.text,
         weather: _selectedWeather,
@@ -136,16 +137,21 @@ class _AddPostScreenState extends State<AddPostScreen> {
       );
 
       if (widget.existingPost == null) {
-        postProvider.addPost(newPost);
+        await postProvider.addPost(newPost);
       } else {
-        postProvider.editPost(
-          newPost.id,
+        await postProvider.editPost(
+          widget.existingPost!.id,
           newPost.title,
           newPost.message,
           newPost.weather,
         );
       }
       Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: ${e.toString()}')),
+      );
     }
   }
+}
 }

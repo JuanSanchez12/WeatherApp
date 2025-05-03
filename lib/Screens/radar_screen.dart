@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../Services/weather_service.dart';
 import '../Services/city_search_delegate.dart';
+import '../Providers/location_provider.dart';
+import 'package:provider/provider.dart';
 
 class RadarScreen extends StatefulWidget {
   const RadarScreen({super.key});
@@ -16,8 +18,6 @@ class RadarScreen extends StatefulWidget {
 class _RadarScreenState extends State<RadarScreen> {
   final WeatherService _weatherService = WeatherService();
   final MapController _mapController = MapController();
-  LatLng _currentLocation = const LatLng(33.7490, -84.3880); // Atlanta
-  String _locationName = 'Atlanta, US';
   List<dynamic> _radarFrames = [];
   int _currentFrameIndex = 0;
   bool _isLoading = true;
@@ -27,6 +27,10 @@ class _RadarScreenState extends State<RadarScreen> {
   void initState() {
     super.initState();
     _fetchRadarData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      _mapController.move(locationProvider.currentLatLng, 12);
+    });
   }
 
   Future<void> _fetchRadarData() async {
@@ -51,27 +55,30 @@ class _RadarScreenState extends State<RadarScreen> {
     }
   }
 
-  Future<void> _changeLocation(String selectedCity) async {
+  Future<void> _changeLocation(String selectedCity, LocationProvider locationProvider) async {
     final cities = await _weatherService.searchCities(selectedCity.split(',')[0]);
     if (cities.isNotEmpty) {
       final location = cities.firstWhere(
         (c) => '${c['name']}${c['state'] != null ? ', ${c['state']}' : ''}, ${c['country']}' == selectedCity,
         orElse: () => cities.first,
       );
-      setState(() {
-        _locationName = selectedCity;
-        _currentLocation = LatLng(location['lat'], location['lon']);
-      });
-      _mapController.move(_currentLocation, 12);
+      
+      final newLocation = LatLng(location['lat'], location['lon']);
+      locationProvider.updateLocation(selectedCity, newLocation);
+      
+      _mapController.move(newLocation, 12);
     }
   }
 
-  Future<void> _showLocationSearch() async {
+  Future<void> _showLocationSearch(BuildContext context) async {
     final selectedCity = await showSearch<String>(
       context: context,
       delegate: CitySearchDelegate(_weatherService),
     );
-    if (selectedCity != null) await _changeLocation(selectedCity);
+    if (selectedCity != null) {
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      await _changeLocation(selectedCity, locationProvider);
+    }
   }
 
   void _changeFrame(int change) {
@@ -82,13 +89,15 @@ class _RadarScreenState extends State<RadarScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locationProvider = Provider.of<LocationProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_locationName),
+        title: Text(locationProvider.currentCity),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _showLocationSearch,
+            onPressed: () => _showLocationSearch(context),
           ),
         ],
       ),
@@ -97,7 +106,7 @@ class _RadarScreenState extends State<RadarScreen> {
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
-              initialCenter: _currentLocation,
+              initialCenter: locationProvider.currentLatLng,
               initialZoom: 12.0,
             ),
             children: [
@@ -119,7 +128,7 @@ class _RadarScreenState extends State<RadarScreen> {
                   Marker(
                     width: 40.0,
                     height: 40.0,
-                    point: _currentLocation,
+                    point: locationProvider.currentLatLng,
                     child: const Icon(
                       Icons.location_pin,
                       color: Colors.red,

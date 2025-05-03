@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../Services/weather_service.dart';
 import '../Services/city_search_delegate.dart';
+import '../Providers/location_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -11,14 +14,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final WeatherService _weatherService = WeatherService();
-  String _locationName = 'Atlanta, US';
   Map<String, dynamic>? _currentWeather;
   List<dynamic> _hourlyForecast = [];
   bool _isLoading = false;
   String _error = '';
   int? _expandedHourIndex;
 
-  // Weather condition to color mapping
   final Map<String, Color> _weatherColors = {
     'clear': Colors.orange[100]!,
     'clouds': Colors.grey[200]!,
@@ -50,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _showSearch() async {
+  Future<void> _showSearch(BuildContext context) async {
     final selectedCity = await showSearch<String>(
       context: context,
       delegate: CitySearchDelegate(_weatherService),
@@ -63,7 +64,13 @@ class _HomeScreenState extends State<HomeScreen> {
           (c) => '${c['name']}${c['state'] != null ? ', ${c['state']}' : ''}, ${c['country']}' == selectedCity,
           orElse: () => cities.first,
         );
-        setState(() => _locationName = selectedCity);
+        
+        final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+        locationProvider.updateLocation(
+          selectedCity,
+          LatLng(location['lat'], location['lon']),
+        );
+        
         _fetchWeather(location['lat'], location['lon']);
       }
     }
@@ -78,12 +85,19 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Initial load for Atlanta
-    _fetchWeather(33.7490, -84.3880);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final locationProvider = Provider.of<LocationProvider>(context, listen: false);
+      _fetchWeather(
+        locationProvider.currentLatLng.latitude,
+        locationProvider.currentLatLng.longitude,
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final locationProvider = Provider.of<LocationProvider>(context);
+
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
       appBar: AppBar(
@@ -91,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            onPressed: _showSearch,
+            onPressed: () => _showSearch(context),
           ),
         ],
       ),
@@ -104,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     children: [
                       // Current Weather Card
-                      _buildCurrentWeatherCard(),
+                      _buildCurrentWeatherCard(locationProvider.currentCity),
                       const SizedBox(height: 20),
                       // Hourly Forecast
                       _buildHourlyForecast(),
@@ -114,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildCurrentWeatherCard() {
+  Widget _buildCurrentWeatherCard(String locationName) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -123,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             Text(
-              _locationName,
+              locationName,
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),

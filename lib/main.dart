@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'Providers/location_provider.dart';
 import 'Providers/post_provider.dart';
 import 'Screens/home_screen.dart';
 import 'Screens/daily_screen.dart';
@@ -20,6 +21,7 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => PostProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
       ],
       child: const MyApp(),
     ),

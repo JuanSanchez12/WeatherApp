@@ -4,8 +4,21 @@ import '../Models/post_model.dart';
 import '../Providers/post_provider.dart';
 import '../Screens/add_post_screen.dart';
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
+
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<PostProvider>(context, listen: false).fetchPosts();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
