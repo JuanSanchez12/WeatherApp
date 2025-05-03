@@ -19,6 +19,7 @@ class _DailyScreenState extends State<DailyScreen> {
   String _error = '';
   int _selectedDayIndex = 0;
 
+  // Weather condition to color and icon mapping
   final Map<String, Color> _weatherColors = {
     'clear': Colors.orange[100]!,
     'clouds': Colors.grey[200]!,
@@ -27,6 +28,25 @@ class _DailyScreenState extends State<DailyScreen> {
     'thunderstorm': Colors.purple[100]!,
     'default': Colors.red[100]!,
   };
+
+  final Map<String, IconData> _weatherIcons = {
+    'clear': Icons.wb_sunny,
+    'clouds': Icons.cloud,
+    'rain': Icons.beach_access,
+    'snow': Icons.ac_unit,
+    'thunderstorm': Icons.flash_on,
+  };
+
+  Color _getWeatherIconColor(String weatherType) {
+    switch (weatherType) {
+      case 'clear': return Colors.orange;
+      case 'clouds': return Colors.grey;
+      case 'rain': return Colors.blue;
+      case 'snow': return Colors.lightBlue;
+      case 'thunderstorm': return Colors.deepPurple;
+      default: return Colors.black;
+    }
+  }
 
   Future<void> _fetchWeather(double lat, double lon) async {
     setState(() {
@@ -94,14 +114,18 @@ class _DailyScreenState extends State<DailyScreen> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
+    final weatherCondition = _weatherData?['current']['weather'][0]['main']?.toString().toLowerCase() ?? 'clear';
+    final iconColor = _getWeatherIconColor(weatherCondition);
 
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
       appBar: AppBar(
         title: const Text('7-Day Forecast'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () => _showSearch(context),
           ),
         ],
@@ -114,13 +138,10 @@ class _DailyScreenState extends State<DailyScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      // Current Weather Card
-                      _buildCurrentWeatherCard(locationProvider.currentCity),
+                      _buildCurrentWeatherCard(locationProvider.currentCity, weatherCondition, iconColor),
                       const SizedBox(height: 20),
-                      // Horizontal Daily Forecast
                       _buildDailyForecastList(),
                       const SizedBox(height: 20),
-                      // Selected Day Details Card
                       if (_weatherData != null && _weatherData!['daily'] != null)
                         _buildSelectedDayCard(_weatherData!['daily'][_selectedDayIndex]),
                     ],
@@ -129,17 +150,36 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
-  Widget _buildCurrentWeatherCard(String locationName) {
+  Widget _buildCurrentWeatherCard(String locationName, String weatherCondition, Color iconColor) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white.withOpacity(0.8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(
-              locationName,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _weatherColors[weatherCondition] ?? _weatherColors['default']!,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _weatherIcons[weatherCondition] ?? Icons.help_outline,
+                    color: iconColor,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  locationName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             Text(
@@ -155,9 +195,9 @@ class _DailyScreenState extends State<DailyScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildWeatherDetail('Humidity', '${_weatherData?['current']['humidity']?.toString() ?? '--'}%'),
-                _buildWeatherDetail('Wind', '${_weatherData?['current']['wind_speed']?.toStringAsFixed(1) ?? '--'} mph'),
-                _buildWeatherDetail('Precip', '${_weatherData?['current']['rain']?['1h']?.toStringAsFixed(0) ?? '0'}%'),
+                _buildWeatherDetail(Icons.water_drop, 'Humidity', '${_weatherData?['current']['humidity']?.toString() ?? '--'}%'),
+                _buildWeatherDetail(Icons.air, 'Wind', '${_weatherData?['current']['wind_speed']?.toStringAsFixed(1) ?? '--'} mph'),
+                _buildWeatherDetail(Icons.umbrella, 'Precip', '${_weatherData?['current']['rain']?['1h']?.toStringAsFixed(0) ?? '0'}%'),
               ],
             ),
           ],
@@ -174,7 +214,7 @@ class _DailyScreenState extends State<DailyScreen> {
     final dailyForecast = _weatherData!['daily'] as List<dynamic>;
 
     return SizedBox(
-      height: 100,
+      height: 120,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: dailyForecast.length,
@@ -183,13 +223,15 @@ class _DailyScreenState extends State<DailyScreen> {
           final date = DateTime.fromMillisecondsSinceEpoch(day['dt'] * 1000);
           final dayName = _getDayName(date.weekday);
           final isSelected = _selectedDayIndex == index;
+          final weatherCondition = day['weather'][0]['main'].toString().toLowerCase();
+          final iconColor = _getWeatherIconColor(weatherCondition);
 
           return GestureDetector(
             onTap: () {
               setState(() => _selectedDayIndex = index);
             },
             child: Container(
-              width: 80,
+              width: 90,
               margin: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
                 color: isSelected ? Colors.white.withOpacity(0.3) : Colors.transparent,
@@ -203,6 +245,19 @@ class _DailyScreenState extends State<DailyScreen> {
                     dayName.substring(0, 3),
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: _weatherColors[weatherCondition] ?? _weatherColors['default']!,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      _weatherIcons[weatherCondition] ?? Icons.help_outline,
+                      color: iconColor,
+                      size: 20,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -226,18 +281,38 @@ class _DailyScreenState extends State<DailyScreen> {
   Widget _buildSelectedDayCard(Map<String, dynamic> day) {
     final date = DateTime.fromMillisecondsSinceEpoch(day['dt'] * 1000);
     final dayName = _getDayName(date.weekday);
-    final weatherCondition = day['weather'][0]['main'].toString();
+    final weatherCondition = day['weather'][0]['main'].toString().toLowerCase();
+    final iconColor = _getWeatherIconColor(weatherCondition);
 
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white.withOpacity(0.8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(
-              '$dayName, ${date.month}/${date.day}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _weatherColors[weatherCondition] ?? _weatherColors['default']!,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _weatherIcons[weatherCondition] ?? Icons.help_outline,
+                    color: iconColor,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '$dayName, ${date.month}/${date.day}',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             Text(
@@ -248,18 +323,18 @@ class _DailyScreenState extends State<DailyScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildWeatherDetail('High', '${day['temp']['max']?.toStringAsFixed(0) ?? '--'}°F'),
-                _buildWeatherDetail('Low', '${day['temp']['min']?.toStringAsFixed(0) ?? '--'}°F'),
-                _buildWeatherDetail('Humidity', '${day['humidity']}%'),
+                _buildWeatherDetail(Icons.arrow_upward, 'High', '${day['temp']['max']?.toStringAsFixed(0) ?? '--'}°F'),
+                _buildWeatherDetail(Icons.arrow_downward, 'Low', '${day['temp']['min']?.toStringAsFixed(0) ?? '--'}°F'),
+                _buildWeatherDetail(Icons.water_drop, 'Humidity', '${day['humidity']}%'),
               ],
             ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildWeatherDetail('Sunrise', _formatTime(day['sunrise'])),
-                _buildWeatherDetail('Sunset', _formatTime(day['sunset'])),
-                _buildWeatherDetail('Precip', '${(day['pop'] * 100).toStringAsFixed(0)}%'),
+                _buildWeatherDetail(Icons.wb_sunny, 'Sunrise', _formatTime(day['sunrise'])),
+                _buildWeatherDetail(Icons.nightlight, 'Sunset', _formatTime(day['sunset'])),
+                _buildWeatherDetail(Icons.umbrella, 'Precip', '${(day['pop'] * 100).toStringAsFixed(0)}%'),
               ],
             ),
           ],
@@ -268,10 +343,10 @@ class _DailyScreenState extends State<DailyScreen> {
     );
   }
 
-  Widget _buildWeatherDetail(String label, String value) {
+  Widget _buildWeatherDetail(IconData icon, String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
+        Icon(icon, size: 20, color: Colors.grey),
         const SizedBox(height: 4),
         Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],

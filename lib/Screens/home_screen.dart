@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _error = '';
   int? _expandedHourIndex;
 
+  // Weather condition to color and icon mapping
   final Map<String, Color> _weatherColors = {
     'clear': Colors.orange[100]!,
     'clouds': Colors.grey[200]!,
@@ -28,6 +29,25 @@ class _HomeScreenState extends State<HomeScreen> {
     'thunderstorm': Colors.purple[100]!,
     'default': Colors.red[100]!,
   };
+
+  final Map<String, IconData> _weatherIcons = {
+    'clear': Icons.wb_sunny,
+    'clouds': Icons.cloud,
+    'rain': Icons.beach_access,
+    'snow': Icons.ac_unit,
+    'thunderstorm': Icons.flash_on,
+  };
+
+  Color _getWeatherIconColor(String weatherType) {
+    switch (weatherType) {
+      case 'clear': return Colors.orange;
+      case 'clouds': return Colors.grey;
+      case 'rain': return Colors.blue;
+      case 'snow': return Colors.lightBlue;
+      case 'thunderstorm': return Colors.deepPurple;
+      default: return Colors.black;
+    }
+  }
 
   Future<void> _fetchWeather(double lat, double lon) async {
     setState(() {
@@ -97,14 +117,18 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final locationProvider = Provider.of<LocationProvider>(context);
+    final weatherCondition = _currentWeather?['weather'][0]['main']?.toString().toLowerCase() ?? 'clear';
+    final iconColor = _getWeatherIconColor(weatherCondition);
 
     return Scaffold(
       backgroundColor: _getBackgroundColor(),
       appBar: AppBar(
         title: const Text('Weather Dashboard'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.search),
+            icon: const Icon(Icons.search, color: Colors.white),
             onPressed: () => _showSearch(context),
           ),
         ],
@@ -117,28 +141,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      // Current Weather Card
-                      _buildCurrentWeatherCard(locationProvider.currentCity),
+                      _buildCurrentWeatherCard(locationProvider.currentCity, weatherCondition, iconColor),
                       const SizedBox(height: 20),
-                      // Hourly Forecast
-                      _buildHourlyForecast(),
+                      _buildHourlyForecast(iconColor),
                     ],
                   ),
                 ),
     );
   }
 
-  Widget _buildCurrentWeatherCard(String locationName) {
+  Widget _buildCurrentWeatherCard(String locationName, String weatherCondition, Color iconColor) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: Colors.white.withOpacity(0.8),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text(
-              locationName,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _weatherColors[weatherCondition] ?? _weatherColors['default']!,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _weatherIcons[weatherCondition] ?? Icons.help_outline,
+                    color: iconColor,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  locationName,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
             const SizedBox(height: 10),
             Text(
@@ -154,9 +195,9 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildWeatherDetail('Humidity', '${_currentWeather?['humidity']?.toString() ?? '--'}%'),
-                _buildWeatherDetail('Wind', '${_currentWeather?['wind_speed']?.toStringAsFixed(1) ?? '--'} mph'),
-                _buildWeatherDetail('Precip', '${_currentWeather?['rain']?['1h']?.toStringAsFixed(0) ?? '0'}%'),
+                _buildWeatherDetail(Icons.water_drop, 'Humidity', '${_currentWeather?['humidity']?.toString() ?? '--'}%'),
+                _buildWeatherDetail(Icons.air, 'Wind', '${_currentWeather?['wind_speed']?.toStringAsFixed(1) ?? '--'} mph'),
+                _buildWeatherDetail(Icons.umbrella, 'Precip', '${_currentWeather?['rain']?['1h']?.toStringAsFixed(0) ?? '0'}%'),
               ],
             ),
           ],
@@ -165,17 +206,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildWeatherDetail(String label, String value) {
+  Widget _buildWeatherDetail(IconData icon, String label, String value) {
     return Column(
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey)),
+        Icon(icon, size: 20, color: Colors.grey),
         const SizedBox(height: 4),
         Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
-  Widget _buildHourlyForecast() {
+  Widget _buildHourlyForecast(Color iconColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -193,10 +234,12 @@ class _HomeScreenState extends State<HomeScreen> {
             final time = DateTime.fromMillisecondsSinceEpoch(hour['dt'] * 1000);
             final isExpanded = _expandedHourIndex == index;
             final precip = hour['rain']?['1h']?.toStringAsFixed(0) ?? '0';
-            final weatherCondition = hour['weather'][0]['main'].toString();
+            final weatherCondition = hour['weather'][0]['main'].toString().toLowerCase();
+            final hourIconColor = _getWeatherIconColor(weatherCondition);
             
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
+              color: Colors.white.withOpacity(0.8),
               child: InkWell(
                 onTap: () {
                   setState(() {
@@ -214,9 +257,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             '${time.hour}:00',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          Text(
-                            weatherCondition,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: _weatherColors[weatherCondition] ?? _weatherColors['default']!,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              _weatherIcons[weatherCondition] ?? Icons.help_outline,
+                              color: hourIconColor,
+                              size: 20,
+                            ),
                           ),
                           Text('${hour['temp']?.toStringAsFixed(0) ?? '--'}°F'),
                           Icon(
@@ -231,9 +282,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _buildWeatherDetail('Humidity', '${hour['humidity']?.toString() ?? '--'}%'),
-                              _buildWeatherDetail('Wind', '${hour['wind_speed']?.toStringAsFixed(1) ?? '--'} mph'),
-                              _buildWeatherDetail('Precip', '$precip%'),
+                              _buildWeatherDetail(Icons.water_drop, 'Humidity', '${hour['humidity']?.toString() ?? '--'}%'),
+                              _buildWeatherDetail(Icons.air, 'Wind', '${hour['wind_speed']?.toStringAsFixed(1) ?? '--'} mph'),
+                              _buildWeatherDetail(Icons.umbrella, 'Precip', '$precip%'),
                             ],
                           ),
                         ),
